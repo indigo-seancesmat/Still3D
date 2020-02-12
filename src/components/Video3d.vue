@@ -48,8 +48,12 @@ export default {
       height: this.height
     });
     this.$refs.still3d.appendChild(this.app.view);
-
-    let img = new PIXI.Sprite.from(this.bgImage);
+    console.log(PIXI, this.app);
+    let img = new PIXI.Texture(this.bgImage);
+    let sprite = new PIXI.Sprite(img);
+    img.bastTexture.on("loaded", () => {
+      pauseVideo(video.baseTexture.source);
+    });
     let containerRatio = this.width / this.height;
     let imageRatio = img.width / img.height;
     let scale = 0;

@@ -20,9 +20,48 @@ export default {
       type: Boolean,
       default: false
     },
+    mouseSensitivity: {
+      type: Number,
+      default: 40
+    },
+    animationSpeed: {
+      type: Number,
+      default: 1000
+    },
     automatedPositions: {
       type: Array,
-      default: null
+      default: () => {
+        return [
+          {
+            x: 0.53,
+            y: 0.06
+          },
+          {
+            x: 0.7,
+            y: 0.18
+          },
+          {
+            x: 0.94,
+            y: 0.9
+          },
+          {
+            x: 0.34,
+            y: 0.9
+          },
+          {
+            x: 0.32,
+            y: 0.77
+          },
+          {
+            x: 0.07,
+            y: 0.08
+          },
+          {
+            x: 0,
+            y: 0
+          }
+        ];
+      }
     }
   },
   data() {
@@ -34,72 +73,49 @@ export default {
       height: window.innerHeight
     };
   },
-  watch: {
-    x(newValue) {
-      this.displacementFilter.scale.x = newValue;
-    },
-    y(newValue) {
-      this.displacementFilter.scale.y = newValue;
+  beforeDestroy() {
+    if (this.ticker) {
+      this.ticker.stop();
     }
   },
   mounted() {
     this.app = new PIXI.Application({
       width: this.width,
-      height: this.height
+      height: this.height,
+      resolution: window.devicePixelRatio,
+      autoDensity: true
     });
     this.$refs.still3d.appendChild(this.app.view);
 
-    let img = new PIXI.Sprite.from(this.bgImage);
-    let containerRatio = this.width / this.height;
-    let imageRatio = img.width / img.height;
-    let scale = 0;
-    let posX;
-    let posY;
-    if (containerRatio > imageRatio) {
-      scale = this.width / img.width;
-      posX = 0;
-      posY = (this.height - img.height * scale) / 2;
-    } else {
-      scale = this.height / img.height;
-      posX = (this.width - img.width * scale) / 2;
-      posY = 0;
-    }
-    console.log(img.width, img.height, scale);
-    img.scale.x = scale;
-    img.scale.y = scale;
-    img.position.x = posX;
-    img.position.y = posY;
-    this.app.stage.addChild(img);
+    this.imgTexture = PIXI.Texture.from(this.bgImage);
+    this.img = new PIXI.Sprite(this.imgTexture);
+    this.imgTexture.baseTexture.on("loaded", () => {
+      this.setScale();
+    });
+    this.img.anchor.x = 0.5;
+    this.img.anchor.y = 0.5;
+    this.app.stage.addChild(this.img);
 
-    let depthMap = new PIXI.Sprite.from(this.depthMap);
-    depthMap.scale.x = scale;
-    depthMap.scale.y = scale;
-    depthMap.position.x = posX;
-    depthMap.position.y = posY;
-    this.app.stage.addChild(depthMap);
+    this.depthMapCont = new PIXI.Sprite.from(this.depthMap);
+    this.depthMapCont.anchor.x = 0.5;
+    this.depthMapCont.anchor.y = 0.5;
+    this.app.stage.addChild(this.depthMapCont);
 
-    this.displacementFilter = new PIXI.filters.DisplacementFilter(depthMap);
+    this.setScale();
+
+    this.displacementFilter = new PIXI.filters.DisplacementFilter(
+      this.depthMapCont
+    );
     this.app.stage.filters = [this.displacementFilter];
 
     if (this.mouse === true) {
-      let displacementFilter = new PIXI.filters.DisplacementFilter(depthMap);
-      this.app.stage.filters = [displacementFilter];
       window.onmousemove = e => {
-        displacementFilter.scale.x = (this.width / 2 - e.clientX) / 40;
-        displacementFilter.scale.y = (this.height / 2 - e.clientY) / 40;
+        this.displacementFilter.scale.x = (this.width / 2 - e.clientX) / 40;
+        this.displacementFilter.scale.y = (this.height / 2 - e.clientY) / 40;
       };
       window.onclick = e => {
         console.log(
-          "x: ",
-          // (this.width / 2 - e.clientX) / 40,
-          // (this.width / 2 - e.clientX) / 40 / this.width,
-          e.clientX / this.width,
-          "y: ",
-          // (this.height / 2 - e.clientY) / 40,
-          // (this.height / 2 - e.clientY) / 40 / this.height,
-          // (this.height / 2 - this.height * 0.7) / 40,
-          // this.height,
-          e.clientY / this.height
+          `x: ${e.clientX / this.width} y: ${e.clientY / this.height}`
         );
       };
     } else {
@@ -107,47 +123,54 @@ export default {
       this.displacementFilter.scale.y = 0;
       this.tl = this.$anime.timeline({
         easing: "linear",
-        duration: 1750,
+        duration: this.animationSpeed,
         loop: true
       });
-      this.tl.add({
-        targets: this.$data,
-        x: this.getXPos(0.53),
-        y: this.getYPos(0.06)
+
+      this.automatedPositions.forEach(cords => {
+        if (cords.x === 0 && cords.y === 0) {
+          this.tl.add({
+            targets: this.$data,
+            x: 0,
+            y: 0
+          });
+        } else {
+          this.tl.add({
+            targets: this.$data,
+            x: this.getXPos(cords.x),
+            y: this.getXPos(cords.y)
+          });
+        }
       });
-      this.tl.add({
-        targets: this.$data,
-        x: this.getXPos(0.7),
-        y: this.getYPos(0.18)
+      this.ticker = new PIXI.Ticker();
+      this.ticker.add(() => {
+        this.displacementFilter.scale.x = this.x;
+        this.displacementFilter.scale.y = this.y;
       });
-      this.tl.add({
-        targets: this.$data,
-        x: this.getXPos(0.94),
-        y: this.getYPos(0.9)
-      });
-      this.tl.add({
-        targets: this.$data,
-        x: this.getXPos(0.34),
-        y: this.getYPos(0.9)
-      });
-      this.tl.add({
-        targets: this.$data,
-        x: this.getXPos(0.32),
-        y: this.getYPos(0.77)
-      });
-      this.tl.add({
-        targets: this.$data,
-        x: this.getXPos(0.07),
-        y: this.getYPos(0.08)
-      });
-      this.tl.add({
-        targets: this.$data,
-        x: 0,
-        y: 0
-      });
+      this.ticker.start();
     }
   },
   methods: {
+    setScale() {
+      this.containerRatio = this.width / this.height;
+      this.imageRatio = this.imgTexture.width / this.imgTexture.height;
+      if (this.containerRatio > this.imageRatio) {
+        this.scale = this.width / this.img.width;
+      } else {
+        this.scale = this.height / this.img.height;
+      }
+      this.setWidthHeight();
+    },
+    setWidthHeight() {
+      this.img.x = this.app.renderer.screen.width / 2;
+      this.img.y = this.app.renderer.screen.height / 2;
+      this.img.scale.x = this.scale;
+      this.img.scale.y = this.scale;
+      this.depthMapCont.x = this.app.renderer.screen.width / 2;
+      this.depthMapCont.y = this.app.renderer.screen.height / 2;
+      this.depthMapCont.scale.x = this.scale;
+      this.depthMapCont.scale.y = this.scale;
+    },
     getXPos(percent) {
       // percentage between 0-1
       return (this.width / 2 - this.width * percent) / 40;
@@ -162,6 +185,8 @@ export default {
 
 <style lang="scss" scoped>
 .still3d {
+  height: 100vh;
+  width: 100vw;
   h1 {
     color: blue;
   }

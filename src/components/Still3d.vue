@@ -1,6 +1,6 @@
 <template>
   <div ref="still3d" class="still3d">
-      <canvas ref="canvas"></canvas>
+    <canvas ref="canvas"></canvas>
   </div>
 </template>
 
@@ -29,7 +29,7 @@ export default {
     },
     animationSpeed: {
       type: Number,
-      default: 1000
+      default: 1200
     },
     automatedPositions: {
       type: Array,
@@ -100,7 +100,6 @@ export default {
     this.img = new PIXI.Sprite(this.imgTexture);
     this.imgTexture.baseTexture.on("loaded", () => {
       this.setScale();
-      console.log('loaded', this.imgTexture.baseTexture)
     });
     this.img.anchor.x = 0.5;
     this.img.anchor.y = 0.5;
@@ -113,19 +112,19 @@ export default {
 
     window.addEventListener("resize", debounce(this.handleResize, 100));
 
-    this.displacementFilter = new PIXI.filters.DisplacementFilter( this.depthMapCont );
+    this.displacementFilter = new PIXI.filters.DisplacementFilter(
+      this.depthMapCont
+    );
     this.stage.filters = [this.displacementFilter];
-    
+
     window.onclick = e => {
-        console.log(
-            `x: ${e.clientX / this.width} y: ${e.clientY / this.height}`
-        );
+      console.log(`x: ${e.clientX / this.width} y: ${e.clientY / this.height}`);
     };
 
     if (this.mouse === true) {
       window.addEventListener("mousemove", this.mouseMove);
-      
-    //   this.setScale();
+
+      //   this.setScale();
       this.ticker = new PIXI.Ticker();
       this.ticker.add(() => {
         this.renderer.render(this.stage);
@@ -133,8 +132,6 @@ export default {
       this.setScale();
       this.ticker.start();
     } else {
-    //   this.displacementFilter.scale.x = 0;
-    //   this.displacementFilter.scale.y = 0;
       this.tl = this.$anime.timeline({
         easing: "linear",
         duration: this.animationSpeed,
@@ -156,9 +153,10 @@ export default {
           });
         }
       });
+
       this.ticker = new PIXI.Ticker();
       this.ticker.add(() => {
-          this.displacementFilter.scale.x = this.x;
+        this.displacementFilter.scale.x = this.x;
         this.displacementFilter.scale.y = this.y;
         this.renderer.render(this.stage);
       });
@@ -170,11 +168,22 @@ export default {
     setScale() {
       this.containerRatio = this.width / this.height;
       this.imageRatio = this.imgTexture.width / this.imgTexture.height;
+
+      // this is to prevent it from scaling on initial load if the image hasn't loaded yet
+      // if this isn't here it throws off the calculations once the image does load
+      if (
+        this.width / this.img.width > 10 ||
+        this.height / this.img.height > 10
+      ) {
+        return;
+      }
+
       if (this.containerRatio > this.imageRatio) {
         this.scale = this.width / this.img.width;
       } else {
         this.scale = this.height / this.img.height;
       }
+
       this.setWidthHeight();
     },
     setWidthHeight() {
@@ -202,8 +211,8 @@ export default {
       return (this.height / 2 - this.height * percent) / 40;
     },
     mouseMove(e) {
-        this.displacementFilter.scale.x = (this.width / 2 - e.clientX) / 40;
-        this.displacementFilter.scale.y = (this.height / 2 - e.clientY) / 40;
+      this.displacementFilter.scale.x = (this.width / 2 - e.clientX) / 40;
+      this.displacementFilter.scale.y = (this.height / 2 - e.clientY) / 40;
     }
   }
 };

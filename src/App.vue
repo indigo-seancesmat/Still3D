@@ -1,30 +1,52 @@
 <template>
   <div id="app">
-    <Still3d :key="num" :bgImage="bg" :depthMap="depth" :mouse="isMouse"/>
+    <Still3d
+      :key="bg + num"
+      :bgImage="bg"
+      :depthMap="depth"
+      :mouse="isMouse"
+      :automatedPositions="automatedPositions"
+      :animationSpeed="animationSpeed"
+    />
     <div id="buttonContainer">
       <div>
         <span>Backgrounds:</span>
         <button
           @click="setBackground('controller')"
-          :class="{'btn--active': currentBackground === 'controller'}"
-        >Controller</button>
+          :class="{ 'btn--active': currentBackground === 'controller' }"
+        >
+          Controller
+        </button>
         <button
           @click="setBackground('boarder')"
-          :class="{'btn--active': currentBackground === 'boarder'}"
-        >Boarder</button>
+          :class="{ 'btn--active': currentBackground === 'boarder' }"
+        >
+          Boarder
+        </button>
         <button
           @click="setBackground('subway')"
-          :class="{'btn--active': currentBackground === 'subway'}"
-        >Subway</button>
+          :class="{ 'btn--active': currentBackground === 'subway' }"
+        >
+          Subway
+        </button>
         <button
           @click="setBackground('mountain')"
-          :class="{'btn--active': currentBackground === 'mountain'}"
-        >Mountain</button>
+          :class="{ 'btn--active': currentBackground === 'mountain' }"
+        >
+          Mountain
+        </button>
       </div>
       <div>
         <span>Interactions:</span>
-        <button @click="updateMouse(false)" :class="{'btn--active': !isMouse}">Auto</button>
-        <button @click="updateMouse(true)" :class="{'btn--active': isMouse}">Mouse Move</button>
+        <button
+          @click="updateMouse(false)"
+          :class="{ 'btn--active': !isMouse }"
+        >
+          Auto
+        </button>
+        <button @click="updateMouse(true)" :class="{ 'btn--active': isMouse }">
+          Mouse Move
+        </button>
       </div>
     </div>
   </div>
@@ -39,7 +61,7 @@ import boarderDepth from "@/assets/boarder-depth2.jpg";
 import subway from "@/assets/subway.jpg";
 import subwayDepth from "@/assets/subway-depth.jpg";
 import mountain from "@/assets/mountain.jpg";
-import mountainDepth from "@/assets/mountain-depth.jpg";
+import mountainDepth from "@/assets/mountain-depth-new.jpg";
 export default {
   name: "App",
   components: {
@@ -51,32 +73,106 @@ export default {
       depth: controllerDepth,
       num: 0,
       isMouse: false,
-      currentBackground: "controller"
+      currentBackground: "controller",
+      automatedPositions: undefined,
+      animationSpeed: undefined
     };
+  },
+  mounted() {
+    this.setBackground("controller");
   },
   methods: {
     setBackground(val) {
       this.currentBackground = val;
+      this.automatedPositions = undefined;
+      this.animationSpeed = undefined;
       if (val === "boarder") {
         this.bg = boarder;
         this.depth = boarderDepth;
-        this.num++;
+        this.animationSpeed = 1600;
       }
       if (val === "controller") {
         this.bg = controller;
         this.depth = controllerDepth;
-        this.num++;
+        this.animationSpeed = 2500;
+        this.automatedPositions = [
+          {
+            x: 0.02,
+            y: 0.98
+          },
+          {
+            x: 0.45,
+            y: 0.01
+          },
+          {
+            x: 0.99,
+            y: 0.07
+          },
+          {
+            x: 0.98,
+            y: 0.97
+          },
+          {
+            x: 0,
+            y: 0
+          }
+        ];
       }
       if (val === "subway") {
         this.bg = subway;
         this.depth = subwayDepth;
-        this.num++;
+        this.animationSpeed = 2500;
+        this.automatedPositions = [
+          {
+            x: 0.97,
+            y: 0.96
+          },
+          {
+            x: 0.72,
+            y: 0.08
+          },
+          {
+            x: 0.03,
+            y: 0.94
+          },
+          {
+            x: 0,
+            y: 0
+          }
+        ];
       }
       if (val === "mountain") {
         this.bg = mountain;
         this.depth = mountainDepth;
-        this.num++;
+        this.animationSpeed = 2000;
+        this.automatedPositions = [
+          {
+            x: 0.97,
+            y: 0.07
+          },
+          {
+            x: 0.92,
+            y: 0.92
+          },
+          {
+            x: 0.06,
+            y: 0.86
+          },
+          {
+            x: 0.04,
+            y: 0.06
+          },
+          {
+            x: 0.53,
+            y: 0.48
+          },
+          {
+            x: 0,
+            y: 0
+          }
+        ];
       }
+      this.num++;
     },
     updateMouse(bool) {
       this.isMouse = bool;

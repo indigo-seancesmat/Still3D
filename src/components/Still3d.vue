@@ -1,9 +1,12 @@
 <template>
-  <div ref="still3d" class="still3d"></div>
+  <div ref="still3d" class="still3d">
+      <canvas ref="canvas"></canvas>
+  </div>
 </template>
 
 <script>
 import * as PIXI from "pixi.js";
+import debounce from "lodash/debounce";
 
 export default {
   name: "Still3d",
@@ -77,50 +80,61 @@ export default {
     if (this.ticker) {
       this.ticker.stop();
     }
+    window.removeEventListener("mousemove", this.mouseMove);
   },
   mounted() {
-    this.app = new PIXI.Application({
+    this.width = window.innerWidth;
+    this.height = window.innerHeight;
+
+    this.renderer = new PIXI.Renderer({
+      view: this.$refs.canvas,
       width: this.width,
       height: this.height,
       resolution: window.devicePixelRatio,
       autoDensity: true
     });
-    this.$refs.still3d.appendChild(this.app.view);
+    this.stage = new PIXI.Container();
+    // this.$refs.still3d.appendChild(this.app.view);
 
     this.imgTexture = PIXI.Texture.from(this.bgImage);
     this.img = new PIXI.Sprite(this.imgTexture);
     this.imgTexture.baseTexture.on("loaded", () => {
       this.setScale();
+      console.log('loaded', this.imgTexture.baseTexture)
     });
     this.img.anchor.x = 0.5;
     this.img.anchor.y = 0.5;
-    this.app.stage.addChild(this.img);
+    this.stage.addChild(this.img);
 
     this.depthMapCont = new PIXI.Sprite.from(this.depthMap);
     this.depthMapCont.anchor.x = 0.5;
     this.depthMapCont.anchor.y = 0.5;
-    this.app.stage.addChild(this.depthMapCont);
+    this.stage.addChild(this.depthMapCont);
 
-    this.setScale();
+    window.addEventListener("resize", debounce(this.handleResize, 100));
 
-    this.displacementFilter = new PIXI.filters.DisplacementFilter(
-      this.depthMapCont
-    );
-    this.app.stage.filters = [this.displacementFilter];
+    this.displacementFilter = new PIXI.filters.DisplacementFilter( this.depthMapCont );
+    this.stage.filters = [this.displacementFilter];
+    
+    window.onclick = e => {
+        console.log(
+            `x: ${e.clientX / this.width} y: ${e.clientY / this.height}`
+        );
+    };
 
     if (this.mouse === true) {
-      window.onmousemove = e => {
-        this.displacementFilter.scale.x = (this.width / 2 - e.clientX) / 40;
-        this.displacementFilter.scale.y = (this.height / 2 - e.clientY) / 40;
-      };
-      window.onclick = e => {
-        console.log(
-          `x: ${e.clientX / this.width} y: ${e.clientY / this.height}`
-        );
-      };
+      window.addEventListener("mousemove", this.mouseMove);
+      
+    //   this.setScale();
+      this.ticker = new PIXI.Ticker();
+      this.ticker.add(() => {
+        this.renderer.render(this.stage);
+      });
+      this.setScale();
+      this.ticker.start();
     } else {
-      this.displacementFilter.scale.x = 0;
-      this.displacementFilter.scale.y = 0;
+    //   this.displacementFilter.scale.x = 0;
+    //   this.displacementFilter.scale.y = 0;
       this.tl = this.$anime.timeline({
         easing: "linear",
         duration: this.animationSpeed,
@@ -144,9 +158,11 @@ export default {
       });
       this.ticker = new PIXI.Ticker();
       this.ticker.add(() => {
-        this.displacementFilter.scale.x = this.x;
+          this.displacementFilter.scale.x = this.x;
         this.displacementFilter.scale.y = this.y;
+        this.renderer.render(this.stage);
       });
+      this.setScale();
       this.ticker.start();
     }
   },
@@ -162,14 +178,20 @@ export default {
       this.setWidthHeight();
     },
     setWidthHeight() {
-      this.img.x = this.app.renderer.screen.width / 2;
-      this.img.y = this.app.renderer.screen.height / 2;
+      this.img.x = this.renderer.screen.width / 2;
+      this.img.y = this.renderer.screen.height / 2;
       this.img.scale.x = this.scale;
       this.img.scale.y = this.scale;
-      this.depthMapCont.x = this.app.renderer.screen.width / 2;
-      this.depthMapCont.y = this.app.renderer.screen.height / 2;
+      this.depthMapCont.x = this.renderer.screen.width / 2;
+      this.depthMapCont.y = this.renderer.screen.height / 2;
       this.depthMapCont.scale.x = this.scale;
       this.depthMapCont.scale.y = this.scale;
+    },
+    handleResize() {
+      this.width = window.innerWidth;
+      this.height = window.innerHeight;
+      this.renderer.resize(this.width, this.height);
+      this.setScale();
     },
     getXPos(percent) {
       // percentage between 0-1
@@ -178,6 +200,10 @@ export default {
     getYPos(percent) {
       // percentage between 0-1
       return (this.height / 2 - this.height * percent) / 40;
+    },
+    mouseMove(e) {
+        this.displacementFilter.scale.x = (this.width / 2 - e.clientX) / 40;
+        this.displacementFilter.scale.y = (this.height / 2 - e.clientY) / 40;
     }
   }
 };

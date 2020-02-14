@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <Still3d :key="bg + num" :bgImage="bg" :depthMap="depth" :mouse="isMouse"/>
+    <Still3d :key="num" :bgImage="bg" :depthMap="depth" :mouse="isMouse"/>
     <div id="buttonContainer">
       <div>
         <span>Backgrounds:</span>
@@ -50,7 +50,7 @@ export default {
       bg: controller,
       depth: controllerDepth,
       num: 0,
-      isMouse: true,
+      isMouse: false,
       currentBackground: "controller"
     };
   },

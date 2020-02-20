@@ -179,9 +179,9 @@ export default {
       }
 
       if (this.containerRatio > this.imageRatio) {
-        this.scale = this.width / this.img.width;
+        this.scale = this.width / this.imgTexture.width;
       } else {
-        this.scale = this.height / this.img.height;
+        this.scale = this.height / this.imgTexture.height;
       }
 
       this.setWidthHeight();
